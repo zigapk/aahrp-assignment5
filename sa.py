@@ -95,8 +95,6 @@ def genSA(fn, b, params):
     step_size = params.step_size
 
     for i in range(n_iterations):
-        y.append(best_eval)
-        z.append(t)
         # take a step
         candidate = curr + np.random.randn(dims) * step_size
         if not insideBounds(b, candidate):
