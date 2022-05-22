@@ -72,6 +72,7 @@ class Individual:
         if self.valid() and f(self.position) < f(self.best_position):
             self.best_position = self.position
 
+    # Check if the individual is within the bounds.
     def valid(self):
         for i in range(self.dimensions):
             if self.position[i] < self.bounds[i].L or self.position[i] > self.bounds[i].U:
