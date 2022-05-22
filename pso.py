@@ -26,6 +26,8 @@ PARAMS = {
 
 # Individual class to hold all the data about a single instance.
 class Individual:
+
+    # Initializes the individual with a random position and velocity.
     def __init__(self, dimensions, b, max_speed, alpha, beta, gamma):
         # Save settings.
         self.alpha = alpha
@@ -42,6 +44,7 @@ class Individual:
             self.velocity.append(uniform(-max_speed, max_speed))
         self.best_position = self.position
 
+    # Moves the individual by the velocity, calculates the next velocity and saves the best position.
     def update(self, global_best, f):
         # Update position.
         new_position = []
