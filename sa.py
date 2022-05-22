@@ -3,129 +3,131 @@
 from functions import funcs, bounds, names, optimums
 import numpy as np
 from scipy import optimize
-import itertools
 import sympy as sp
 from gmpy2 import mpfr, exp
-import matplotlib.pyplot as plt
 
 
-def expo(t, step):
-    return t * mpfr(pow(0.95, step))
+def expo(t, step, curr_t):
+    return t * pow(0.95, step)
 
 
-def fsa(t, step):
-    return mpfr(t / 0.5 * mpfr(step + 1))
+def fsa(t, step, curr_t):
+    return t / (step + 1)
 
 
-def boltz(t, step):
-    return mpfr(t / mpfr(np.log(step + 2)))
+def boltz(t, step, curr_t):
+    return t / np.log(step + 2)
+
+
+def geom(t, step, curr_t):
+    return 0.95 * curr_t
 
 
 schedules = {
     "exp": expo,
     "fsa": fsa,
-    "boltz": boltz
+    "boltz": boltz,
+    "geom": geom
 }
 
 scheduleNames = {
     "exp",
     "fsa",
-    "boltz"
-}
-
-temps = {
-    10,
-    100,
-    1000
+    "boltz",
+    "geom"
 }
 
 
 class Parameters:
-    def __init__(self, temp, schedule, step_size):
+    def __init__(self, temp, schedule, step_size_coeff):
         self.temp = temp
         self.schedule = schedule
-        self.step_size = step_size
+        self.step_size_coeff = step_size_coeff
 
 controls = {
-    'Schaffer1': Parameters(100, 'fsa', 2),  # BEST: -1.871351376442343e-05
-    'Schaffer2': Parameters(100, 'boltz', 2),  # BEST: -0.11495008887399101
-    'Salomon': Parameters(10, 'exp', 2),  # BEST: -0.09987334850340979
-    'Griewank': Parameters(10, 'exp', 10),  # BEST: -0.11374005622802086
-    'PriceTransistor': Parameters(100, 'boltz', 2),  # BEST: -11.882357455049325
-    'Expo': Parameters(100, 'boltz', 2),  # BEST: 1.1798516886252834
-    'Modlangerman': Parameters(1000, 'boltz', 2),  # BEST: 0.9925941343417226
-    'EMichalewicz': Parameters(10, 'boltz', 2),  # BEST: 1.2213803104203915
-    'Shekelfox5': Parameters(10, 'fsa', 2),  # BEST: 7.253687654404963
-    'Schwefel': Parameters(1000, 'fsa', 2)  # BEST: 1480.6897282414966
+    'Schaffer1': Parameters(100, 'fsa', 20),
+    'Schaffer2': Parameters(100, 'boltz', 20),
+    'Salomon': Parameters(10, 'exp', 20),
+    'Griewank': Parameters(10, 'exp', 5),
+    'PriceTransistor': Parameters(1000, 'geom', 3),
+    'Expo': Parameters(100, 'boltz', 20),
+    'Modlangerman': Parameters(1000, 'geom', 3),
+    'EMichalewicz': Parameters(10, 'boltz', 3),
+    'Shekelfox5': Parameters(10, 'geom', 3),
+    'Schwefel': Parameters(10, 'boltz', 3)
 }
 
 
 def insideBounds(b, candidate):
     return all(bd.L <= d <= bd.U for bd, d in zip(b, candidate))
 
-
-def gradient_descent(gradient, x0):
-    n_iter = 200 * len(x0)
-    x = x0
-    for i in range(n_iter):
-        diff = -0.1 * gradient(x)
-        x += diff
-    return x
-
-
-def genSA(fn, b, params):
+def sa(fn, b, params, name):
     # Generate initial solution
-    best = [np.random.uniform(bd.L, bd.U) for bd in b]
+    best_val = np.inf
+    for i in range(100):
+        candidate = [np.random.uniform(bd.L, bd.U) for bd in b]
+        if fn(candidate) < best_val:
+            best = candidate
+            best_val = fn(candidate)
 
     # Dimensions
     dims = len(b)
 
     # Evaluate the initial solution
-    best_eval = fn(best)
+    best_val = fn(best)
 
     # Initialize temperature and annealing schedule
+    initial_t = mpfr(params.temp)
     t = mpfr(params.temp)
+
     schedule = schedules[params.schedule]
 
     # Initialize current result
-    curr, curr_eval = best, best_eval
+    curr, curr_val = best, best_val
     n_iterations = 10000
 
     # Initialize step size
-    step_size = params.step_size
+    step_size = np.abs(b[0].L - b[0].U) / params.step_size_coeff
 
     for i in range(n_iterations):
-        # take a step
-        candidate = curr + np.random.randn(dims) * step_size
-        if not insideBounds(b, candidate):
-            continue
-        # evaluate candidate point
-        candidate_eval = fn(candidate)
-        # check for new best solution
-        if candidate_eval < best_eval:
-            # store new best point
-            best, best_eval = candidate, candidate_eval
-        # difference between candidate and current point evaluation
-        diff = candidate_eval - curr_eval
-        # calculate temperature for current epoch
-        t = mpfr(schedule(t, i))
-        # calculate metropolis acceptance criterion
-        metropolis = exp(-diff / t)
-        # check if we should keep the new point
-        if diff < 0 or np.random.rand() < metropolis:
-            # store the new current point
-            curr, curr_eval = candidate, candidate_eval
+        # Generate candidate
+        candidate = [np.random.uniform(-1, 1) * step_size for bd in b]
+        while not insideBounds(b, candidate):
+            candidate = [np.random.uniform(-1, 1) * step_size for bd in b]
+
+        # Evaluate candidate
+        candidate_val = fn(candidate)
+
+        # Check if better candidate and store best
+        if candidate_val < best_val:
+            best, best_val = candidate, candidate_val
+
+        # Difference between candidate and current point objective function value
+        diff = candidate_val - curr_val
+
+        # Adjust temperature
+        t = mpfr(schedule(initial_t, i, t))
+
+        # Adjust step size
+        step_size = step_size * 0.99
+
+        # Calculate acceptance probability
+        prob = exp(-diff / t)
+
+        # Move to new point (or not)
+        if diff < 0 or np.random.rand() < prob:
+            curr, curr_val = candidate, candidate_val
 
     # After getting best result, perform local optimisation
-    #best = optimize.fmin_cg(fn, best)
-    #best = gradient_descent(np.gradient(fn), best)
-    return fn(best)
+    # best = optimize.fmin_cg(fn, best)
+    return best, best_val
 
 
 def main():
     for fn in names:
-        best = genSA(funcs[fn], bounds[fn], controls[fn])
-        print(fn, ": opt: ", optimums.get(fn), " result: ", best, " diff: ", np.abs(np.abs(optimums.get(fn)) - np.abs(best)))
+        best, best_val = sa(funcs[fn], bounds[fn], controls[fn], fn)
+        print(fn, "opt: ", optimums.get(fn), " result: ", best_val, " diff: ",
+              np.abs(np.abs(optimums.get(fn)) - np.abs(best_val)))
 
 
 if __name__ == "__main__":
