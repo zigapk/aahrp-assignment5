@@ -68,10 +68,10 @@ def PriceTransistor(par):
                   [28.5132, 111.8467, 134.3884, 211.4823]])
     for k in range(4):
         alpha = (1.0 - par[0] * par[1]) * par[2] * (
-                    np.exp(par[4] * (g[0][k] - 0.001 * g[2][k] * par[6] - 0.001 * par[7] * g[4][k])) - 1.0) - g[4][k] + \
+                np.exp(par[4] * (g[0][k] - 0.001 * g[2][k] * par[6] - 0.001 * par[7] * g[4][k])) - 1.0) - g[4][k] + \
                 g[3][k] * par[1]
         beta = (1.0 - par[0] * par[1]) * par[3] * (
-                    np.exp(par[5] * (g[0][k] - g[1][k] - 0.001 * g[2][k] * par[6] + g[3][k] * 0.001 * par[8])) - 1.0) - \
+                np.exp(par[5] * (g[0][k] - g[1][k] - 0.001 * g[2][k] * par[6] + g[3][k] * 0.001 * par[8])) - 1.0) - \
                g[4][k] * par[0] + g[3][k]
         sumsqr += alpha * alpha + beta * beta
     sum = par[0] * par[2] - par[1] * par[3]
@@ -210,5 +210,15 @@ funcs = {
     'Schwefel': Schwefel
 }
 
-names = ['Schaffer1', 'Schaffer2', 'Salomon', 'Griewank', 'PriceTransistor', 'Expo', 'Modlangerman', 'EMichalewicz',
-         'Shekelfox5', 'Schwefel']
+names = [
+    'Schaffer1',
+    'Schaffer2',
+    'Salomon',
+    'Griewank',
+    'PriceTransistor',
+    'Expo',
+    'Modlangerman',
+    'EMichalewicz',
+    'Shekelfox5',
+    'Schwefel',
+]
