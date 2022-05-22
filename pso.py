@@ -1,8 +1,9 @@
 from functions import funcs, bounds, names, optimums
 from random import uniform, seed, random
 from datetime import datetime
-
 import warnings
+
+# Disable warnings for overflows since those results won't ever be used as the best anyway.
 warnings.filterwarnings("ignore")
 
 # Seed for reproducibility.
