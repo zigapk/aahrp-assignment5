@@ -131,7 +131,8 @@ def main():
         best = pso(name)
         f = funcs[name]
 
-        print(name, ':', f(best), ':', abs(f(best) - optimums[name]))
+        # print(name, ':', f(best), ':', abs(f(best) - optimums[name]))
+        print('\t'.join(map(str, best)))
 
 
 if __name__ == '__main__':
